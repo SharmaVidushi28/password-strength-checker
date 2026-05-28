@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Strength Checker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+    }
+
+    .header { margin-bottom: 1.5rem; }
+    .header h1 { font-size: 22px; font-weight: 600; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+    .header p { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+
+    .input-wrap { position: relative; margin-bottom: 1.25rem; }
+    .input-wrap input {
+      width: 100%;
+      padding: 12px 44px 12px 14px;
+      background: #0f172a;
+      border: 1.5px solid #334155;
+      border-radius: 10px;
+      color: #f1f5f9;
+      font-size: 15px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-wrap input:focus { border-color: #3b82f6; }
+    .toggle-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center;
+    }
+    .toggle-btn:hover { color: #94a3b8; }
+
+    .meter-row { display: flex; gap: 6px; margin-bottom: 8px; }
+    .seg {
+      flex: 1; height: 5px; border-radius: 4px;
+      background: #334155; transition: background 0.35s;
+    }
+
+    .strength-label {
+      font-size: 13px; font-weight: 600; margin-bottom: 1.25rem;
+      color: #64748b; transition: color 0.3s;
+    }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 1.25rem;
+    }
+    .stat {
+      background: #0f172a; border-radius: 10px;
+      padding: 12px 8px; text-align: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 600; color: #f1f5f9; }
+    .stat-lbl { font-size: 11px; color: #64748b; margin-top: 3px; }
+
+    .checklist {
+      list-style: none; display: grid;
+      grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem;
+    }
+    .checklist li {
+      font-size: 13px; color: #475569;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.2s;
+    }
+    .checklist li.pass { color: #4ade80; }
+    .checklist li i { font-size: 15px; }
+
+    .tip-box {
+      background: #0f172a;
+      border-left: 3px solid #3b82f6;
+      border-radius: 0 10px 10px 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 1rem;
+      min-height: 40px;
+      line-height: 1.5;
+    }
+
+    .crack-box {
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      padding: 6px;
+    }
+    .crack-val { font-weight: 600; color: #f1f5f9; }
+
+    .badge {
+      display: inline-block;
+      background: #1e3a5f;
+      color: #60a5fa;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 8px;
+      font-weight: 500;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1><i class="ti ti-shield-lock"></i> Password Strength Checker <span class="badge">Cybersec</span></h1>
+    <p>Analyse your password in real-time. Nothing is sent to any server.</p>
+  </div>
+
+  <div class="input-wrap">
+    <input type="password" id="pw" placeholder="Enter a password..." autocomplete="off" />
+    <button class="toggle-btn" id="toggleBtn" aria-label="Toggle visibility">
+      <i class="ti ti-eye" id="eyeIcon"></i>
+    </button>
+  </div>
+
+  <div class="meter-row">
+    <div class="seg" id="s1"></div>
+    <div class="seg" id="s2"></div>
+    <div class="seg" id="s3"></div>
+    <div class="seg" id="s4"></div>
+    <div class="seg" id="s5"></div>
+  </div>
+  <p class="strength-label" id="strengthLabel">Start typing to analyse...</p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="statLen">0</div><div class="stat-lbl">Length</div></div>
+    <div class="stat"><div class="stat-val" id="statPool">0</div><div class="stat-lbl">Char pool</div></div>
+    <div class="stat"><div class="stat-val" id="statEnt">0</div><div class="stat-lbl">Entropy bits</div></div>
+  </div>
+
+  <ul class="checklist">
+    <li id="c1"><i class="ti ti-circle-x"></i> 8+ characters</li>
+    <li id="c2"><i class="ti ti-circle-x"></i> Uppercase letter</li>
+    <li id="c3"><i class="ti ti-circle-x"></i> Lowercase letter</li>
+    <li id="c4"><i class="ti ti-circle-x"></i> Number</li>
+    <li id="c5"><i class="ti ti-circle-x"></i> Special character</li>
+    <li id="c6"><i class="ti ti-circle-x"></i> 12+ characters</li>
+  </ul>
+
+  <div class="tip-box" id="tipBox">Your security tips will appear here as you type.</div>
+  <div class="crack-box" id="crackBox"></div>
+</div>
+
+<script>
+  const pw = document.getElementById('pw');
+  const toggleBtn = document.getElementById('toggleBtn');
+  const eyeIcon = document.getElementById('eyeIcon');
+  const segs = [1,2,3,4,5].map(i => document.getElementById('s'+i));
+  const strengthLabel = document.getElementById('strengthLabel');
+  const statLen = document.getElementById('statLen');
+  const statPool = document.getElementById('statPool');
+  const statEnt = document.getElementById('statEnt');
+  const checkEls = [1,2,3,4,5,6].map(i => document.getElementById('c'+i));
+  const tipBox = document.getElementById('tipBox');
+  const crackBox = document.getElementById('crackBox');
+
+  const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#10b981'];
+  const LABELS = ['Very Weak','Weak','Fair','Strong','Very Strong'];
+  const COMMON = ['password','123456','qwerty','letmein','welcome','admin','monkey','dragon','sunshine','iloveyou'];
+
+  function getPool(p) {
+    let n = 0;
+    if (/[a-z]/.test(p)) n += 26;
+    if (/[A-Z]/.test(p)) n += 26;
+    if (/[0-9]/.test(p)) n += 10;
+    if (/[^a-zA-Z0-9]/.test(p)) n += 32;
+    return n;
+  }
+
+  function crackTime(entropy) {
+    const secs = Math.pow(2, entropy) / 1e10;
+    if (secs < 1) return 'instantly';
+    if (secs < 60) return Math.round(secs) + ' seconds';
+    if (secs < 3600) return Math.round(secs/60) + ' minutes';
+    if (secs < 86400) return Math.round(secs/3600) + ' hours';
+    if (secs < 31536000) return Math.round(secs/86400) + ' days';
+    if (secs < 3.15e9) return Math.round(secs/31536000) + ' years';
+    if (secs < 3.15e12) return Math.round(secs/3.15e9) + ' thousand years';
+    return 'practically forever';
+  }
+
+  function getTip(p) {
+    if (!p) return 'Your security tips will appear here as you type.';
+    if (COMMON.some(c => p.toLowerCase().includes(c))) return '⚠️ Avoid common words like "password" or "123456" — these are the first ones attackers try.';
+    if (p.length < 8) return '💡 Longer passwords are exponentially harder to crack. Aim for at least 12 characters.';
+    if (!/[A-Z]/.test(p)) return '💡 Add uppercase letters — it significantly expands the character pool.';
+    if (!/[0-9]/.test(p)) return '💡 Mix in numbers to increase entropy and complexity.';
+    if (!/[^a-zA-Z0-9]/.test(p)) return '💡 Special characters like !@#$% make brute-force attacks much harder.';
+    if (p.length < 12) return '💡 You are close — push to 12+ characters for a strong password.';
+    if (/(.)\1{2,}/.test(p)) return '⚠️ Avoid repeated characters like "aaa" — they reduce effective entropy.';
+    return '✅ Great password! Consider using a password manager to store it safely.';
+  }
+
+  function score(p) {
+    if (!p) return -1;
+    let s = 0;
+    if (p.length >= 8) s++;
+    if (p.length >= 12) s++;
+    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++;
+    if (/[0-9]/.test(p)) s++;
+    if (/[^a-zA-Z0-9]/.test(p)) s++;
+    if (COMMON.some(c => p.toLowerCase().includes(c))) s = Math.max(0, s - 2);
+    return Math.min(4, Math.max(0, s - 1));
+  }
+
+  function analyse() {
+    const val = pw.value;
+    const s = score(val);
+    const pool = val ? getPool(val) : 0;
+    const entropy = val ? Math.round(val.length * Math.log2(Math.max(pool, 1))) : 0;
+
+    statLen.textContent = val.length;
+    statPool.textContent = pool;
+    statEnt.textContent = entropy;
+
+    segs.forEach((seg, i) => {
+      seg.style.background = (!val) ? '#334155' : (i <= s ? COLORS[s] : '#334155');
+    });
+
+    if (!val) {
+      strengthLabel.textContent = 'Start typing to analyse...';
+      strengthLabel.style.color = '#64748b';
+      crackBox.innerHTML = '';
+    } else {
+      strengthLabel.textContent = LABELS[s];
+      strengthLabel.style.color = COLORS[s];
+      crackBox.innerHTML = 'At 10 billion guesses/sec — cracked in <span class="crack-val">' + crackTime(entropy) + '</span>';
+    }
+
+    const pass = [
+      val.length >= 8,
+      /[A-Z]/.test(val),
+      /[a-z]/.test(val),
+      /[0-9]/.test(val),
+      /[^a-zA-Z0-9]/.test(val),
+      val.length >= 12
+    ];
+    checkEls.forEach((el, i) => {
+      el.classList.toggle('pass', pass[i]);
+      el.querySelector('i').className = pass[i] ? 'ti ti-circle-check' : 'ti ti-circle-x';
+    });
+
+    tipBox.textContent = getTip(val);
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    const hidden = pw.type === 'password';
+    pw.type = hidden ? 'text' : 'password';
+    eyeIcon.className = hidden ? 'ti ti-eye-off' : 'ti ti-eye';
+  });
+
+  pw.addEventListener('input', analyse);
+</script>
+</body>
+</html>
